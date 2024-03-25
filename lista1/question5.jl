@@ -111,7 +111,7 @@ pr  = U_Ia.p;
 Ω   = 1:1:length(pr);
 Rev = U_Ia.u;
 
-plot_FstOrder(Rev, pr, Ω);
+# plot_FstOrder(Rev, pr, Ω);
 
 # ============================     Item (c)     ============================== #
 

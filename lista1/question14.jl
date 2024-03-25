@@ -227,7 +227,7 @@ print_statistics(U_Ic);                                 # Print de Estatíticas 
 
 # ============================     Item (d)     ============================== #
 
-df = DataFrame(XLSX.readtable("Questao15 - Historico Consultoria.xlsx", "Historico_Consultoria"))
+df = DataFrame(XLSX.readtable("lista1/Questao15 - Historico Consultoria.xlsx", "Historico_Consultoria"))
 
 # Contar o número de previsões "Preço Normal"
 total_prev_normal = sum(df[:, 1] .== "Preço Normal")
