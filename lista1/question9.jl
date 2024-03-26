@@ -3,7 +3,9 @@ using Plots
 using DecisionProgramming 
 using JuMP
 using HiGHS 
+using Ipopt
 using Distributions
+using QuadGK
 
 include("Q5_utils.jl");
 
@@ -115,5 +117,35 @@ plot_FstOrder(Rev, pr, Ω, "PerfilRisco_q9a", "Renda Fixa");
 
 
 # ============================     Item (c)     ============================== #
+#Resolvendo pela integral igual ao slide
 
+f(q1) = (5q1 + 50 + 50 * exp(-0.5*q1) + 5/2 * q1^2 + 25*q1) / 9
 
+# Calculando o valor esperado de R(q1, q2)
+valor_esperado, _ = quadgk(f, -2, 7)
+println("O valor esperado de R(q1, q2) é: ", valor_esperado)
+
+# ============================     Item (d)     ============================== #
+
+modelo = Model(optimizer_with_attributes(Ipopt.Optimizer, "print_level" => 0))
+
+# Definindo as variáveis de decisão
+@variable(modelo, -2 <= q1 <= 7)
+@variable(modelo, q2 <= 10)
+
+# Definindo a função objetivo (a ser minimizada)
+@NLobjective(modelo, Min, 10*q2 + 50*exp(-0.5*q1) + 5*q1*q2)
+@constraint(modelo, q2 >= q1)
+
+# Resolvendo o modelo
+optimize!(modelo)
+
+if termination_status(modelo) == MOI.LOCALLY_SOLVED || termination_status(modelo) == MOI.OPTIMAL
+    q1_otimo = value(q1)
+    q2_otimo = value(q2)
+    pagamento_pior_caso = objective_value(modelo)
+    
+    println("O pagamento do novo produto no pior caso de realização é: R($q1_otimo, $q2_otimo) =", pagamento_pior_caso)
+else
+    println("Não foi possível encontrar a solução ótima.")
+end
