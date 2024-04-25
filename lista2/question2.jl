@@ -18,6 +18,12 @@ end
 function calc_UtilityNew(x)
     return 5*calc_Utility(x) + 10    
 end
+# ============================     Item (a)     ============================== #
+u_list = [calc_Utility(i) for i in -2000:2500]
+pa = plot([-2000:2500], u_list, xlabel="Receita", ylabel="Utilidade", label="", title="Gráfico de Receita(x) X Utilidade(x)", legend=false)
+display(pa)
+# savefig(pa, "lista2/images/q2a_utilconvex.png") 
+
 
 # ============================     Item (b)     ============================== #
 opcX = round(calc_Utility(3000-500) * 0.5 + calc_Utility(500-500) * 0.2 + calc_Utility(-1500-500) * 0.3; digits=2)

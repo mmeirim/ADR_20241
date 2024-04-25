@@ -3,7 +3,7 @@
 # ============================================================================ #
 
 using Distributions, Random
-using RCall
+# using RCall
 using Plots
 
 # ======================    Parâmetros do Problema   ========================= #

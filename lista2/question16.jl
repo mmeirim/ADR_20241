@@ -99,7 +99,7 @@ end
 
 VaR_x1 = calc_VaR(Rev1, pr, α)
 VaR_x2 = calc_VaR(Rev2, pr, α)
-if VaR_x1 >= VaR_x2
+if VaR_x1 <= VaR_x2
     println("VaR($α) - A opção x1($VaR_x1) preferida à opção x2($VaR_x2),")
 else
     println("VaR($α) - A opção x2($VaR_x2) preferida à opção x1($VaR_x1)")
@@ -107,7 +107,7 @@ end
 
 CVaR_x1 = calc_CVaR(Rev1, pr, α);
 CVaR_x2 = calc_CVaR(Rev2, pr, α);
-if VaR_x1 >= VaR_x2
+if CVaR_x1 <= CVaR_x2
     println("CVaR($α) - A opção x1($CVaR_x1) preferida à opção x2($CVaR_x2),")
 else
     println("CVaR($α) - A opção x2($CVaR_x2) preferida à opção x1($CVaR_x1)")
@@ -147,3 +147,6 @@ Rev15 = [calc_ReceitaJornaleiro(x15, d) for d in D]
 println("Conditional Value-at-Risk - (θ=0.1): ", calc_CVaR(Rev01, pr, α));
 println("Conditional Value-at-Risk - (θ=1.0): ", calc_CVaR(Rev10, pr, α));
 println("Conditional Value-at-Risk - (θ=1.5): ", calc_CVaR(Rev15, pr, α));
+# Quanto maior o θ mais arriscado (maior o CVaR). O que faz sentido, visto que quanto maior o valor de θ, maior foi o x*(θ) encontrado e com isso maior
+# o risco de assumido pelo jornaleiro ao comprar um número mais elevado de jornais dado uma demanda incerta. Além disso, podemos entender que quanto maior
+# o valor de θ, maior a utilidade esperada e a receita, e sendo o CVaR uma medida coerente de risco se X > Y, CVaR(X) > CVaR(Y) (monotonicidade)

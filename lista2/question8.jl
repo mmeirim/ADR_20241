@@ -211,12 +211,16 @@ for k in collect(0:10000)
     end
 end
 
-for k in collect(10000:-1:0)
-    Rev1_f = repeat([k], nCenarios)
-    flagDESO_Soc_f = calc_ScdOrder(Rev2, Rev1_f, pr, Ω)
-    if (flagDESO_Soc_f == true)
-        println("Sociedade possui dominância estocástica de Segunda Ordem sobre RF, quando o Rendimento é no máximo: ", k);
-        # plot_ScdOrder(Rev1_f, Rev2, pr, Ω);
-        break
-    end
-end
+VME_soc = sum(Rev2[ω] * pr[ω] for ω in Ω)
+
+println("O Valor Esperado do payoff da opção sociedade é de \$$(round(VME_soc, digits=2))")
+
+# for k in collect(10000:-1:0)
+#     Rev1_f = repeat([k], nCenarios)
+#     flagDESO_Soc_f = calc_ScdOrder(Rev2, Rev1_f, pr, Ω)
+#     if (flagDESO_Soc_f == true)
+#         println("Sociedade possui dominância estocástica de Segunda Ordem sobre RF, quando o Rendimento é no máximo: ", k);
+#         # plot_ScdOrder(Rev1_f, Rev2, pr, Ω);
+#         break
+#     end
+# end
