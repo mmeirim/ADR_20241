@@ -35,9 +35,9 @@ DD_Q1 = minimum(Rev1);
 DD_Q2 = maximum(Rev2);
 
 if (DD_Q1 >= DD_Q2)
-    println("Q1 possui dominância determinística sobre Q2");
+    println("RF possui dominância determinística sobre Soc");
 else
-    println("Q1 NÃO possui dominância determinística sobre Q2");
+    println("RF NÃO possui dominância determinística sobre Soc");
 end
 
 
@@ -47,9 +47,9 @@ DD_Q1 = maximum(Rev1);
 DD_Q2 = minimum(Rev2);
 
 if (DD_Q2 >= DD_Q1)
-    println("Q2 possui dominância determinística sobre Q1");
+    println("Soc possui dominância determinística sobre RF");
 else
-    println("Q2 NÃO possui dominância determinística sobre Q1");
+    println("Soc NÃO possui dominância determinística sobre RF");
 end
 println("")
 # ============================================================================ #
@@ -69,9 +69,9 @@ for ω in Ω
 end
 
 if (flagDEPP_Q1)
-    println("Q1 possui dominância estocástica ponto-a-ponto sobre Q2");
+    println("RF possui dominância estocástica ponto-a-ponto sobre Scc");
 else
-    println("Q1 NÃO possui dominância estocástica ponto-a-ponto sobre Q2");
+    println("RF NÃO possui dominância estocástica ponto-a-ponto sobre Soc");
 end
 
 #### -> Q2 Dominate Q1 <- ####
@@ -85,9 +85,9 @@ for ω in Ω
 end
 
 if (flagDEPP_Q2)
-    println("Q2 possui dominância estocástica ponto-a-ponto sobre Q1");
+    println("Soc possui dominância estocástica ponto-a-ponto sobre RF");
 else
-    println("Q2 NÃO possui dominância estocástica ponto-a-ponto sobre Q1");
+    println("Soc NÃO possui dominância estocástica ponto-a-ponto sobre RF");
 end
 
 println("")
@@ -102,7 +102,7 @@ for k in collect(0:1000)
     Rev2_b = k - I;
 
     if Rev2_b >= Rev1_b
-        println("Q2 possui dominância determinística sobre Q1 quando o seu menor ganho é: ", k);
+        println("Soc possui dominância determinística sobre RF quando o seu menor ganho é: ", k);
         break
     end
 end

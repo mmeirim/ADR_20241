@@ -120,6 +120,7 @@ function calc_UtilidadeJornaleiro(x, θ)
 end
 
 teta_list = []
+teta_list_util = []
 for θ in 0.1:0.05:1.5
     util_list = []
     for x in 1:u_bar
@@ -129,12 +130,17 @@ for θ in 0.1:0.05:1.5
     max_util, max_index = findmax(util_list)
     println("θ($θ):", max_index, " - ", max_util)
     append!(teta_list, max_index)
+    append!(teta_list_util, max_util)
 end 
 # println(teta_list)
 
 p = plot(collect(0.1:0.05:1.5), teta_list, xlabel="θ", ylabel="x*(θ)", label="", title="Gráfico de θ versus x*(θ)", legend=false)
 display(p)
 # savefig(p, "lista2/images/q11g_bestX_theta")
+
+pu = plot(collect(0.1:0.05:1.5), teta_list_util, xlabel="θ", ylabel="u(R(x*(θ),d)", label="", title="Gráfico de θ versus u(R(x*(θ),d)", legend=false)
+display(pu)
+# savefig(pu, "lista2/images/q16g_util_theta")
 
 α = 0.99
 x01 = teta_list[1]

@@ -84,20 +84,36 @@ end
 u_seg = sum(calc_UtilidadeSeguro(θ, - calcPrejuizo(T, D[i])) * pr[i] for i in Ω) * pr_Ac + calc_UtilidadeSeguro(θ,0) * (1-pr_Ac)
 u_sseg = sum(calc_UtilidadeSeguro(θ,-D[i]) * pr[i] for i in Ω) * pr_Ac + calc_UtilidadeSeguro(θ,0) * (1-pr_Ac)
 
-# calcular equivalente certo
-eq_certo_seg = - log(1-u_seg)/θ
-eq_certo_sseg = - log(1-u_sseg)/θ
+# calcular equivalente certo (-1 * eq_certo, pois calculei a utilidade de -x e não de x)
+eq_certo_seg = log(1-u_seg)/θ
+eq_certo_sseg = log(1-u_sseg)/θ
 
 # EQ certo Seguro - EQ Certo S/ seguro
-β = eq_certo_seg - eq_certo_sseg
+β = - (eq_certo_seg - eq_certo_sseg)
 println("O ser o maior valor de prêmio (β) considerando a função utilidade é de : \$$(round(β, digits=2))")
 
 # ============================     Item (g)     ============================== #
 u_segP = sum(calc_UtilidadeSeguro(θ, - (β + calcPrejuizo(T, D[i]))) * pr[i] for i in Ω) * pr_Ac + calc_UtilidadeSeguro(θ,- (β + 0)) * (1-pr_Ac)
 
-eq_certo_segP = - log(1-u_segP)/θ
+eq_certo_segP = log(1-u_segP)/θ
+
+println("O equivalente certo do fluxo financeiro incerto da empresa sob a decisão de adquirir o seguro, com o prêmio β é de: \$$(round(eq_certo_segP, digits=2))")
+# O meu entendimento é que a empresa troca todo o fluxo incerto de prejuízos por um montante de 75. Esse valor é menor que Franquia+Premio, ou seja, 
+# ele trocaria o fluxo incerto de prejuizos, por um prejuizo de 75 que é inferior ao maior valor de prejuizo possivel no fluxo incerto (Franquia+Premio)
+# O que faz sentido, visto que não valeria a pena trocar um prejuizo incerto, porém limitado à no maximo 80 (Franquia+premio), por um prejuizo certo superior a 80
 
 # ============================     Item (h)     ============================== #
-# α = 0.95
-# Rev_seguro = []
-# CVaR_seguro = calc_CVaR(pr, α)
+α = 0.95
+# Necessário multiplica por -1 pois a função de calculo do CVaR que estou utilizando está definida em termos de ganhos financeiros (similar a utilidade)
+Rev_seguro = [-calcPrejuizo(T, D[i]) for i in 1:nCenarios]
+Rev_sseguro = [-D[i] for i in 1:nCenarios]
+
+CVaR_seguro = calc_CVaR(Rev_seguro,repeat([pr_Ac], nCenarios), α)
+CVaR_sseguro = calc_CVaR(Rev_sseguro,repeat([pr_Ac], nCenarios), α)
+β_CVaR = - (CVaR_seguro - CVaR_sseguro)
+
+println("O ser o maior valor de prêmio (β) considerando o CVaR_95% é de : \$$(round(β_CVaR, digits=2))")
+
+# O premio β está aumentando ao longo da questão, isso significa que a distancia entre o prejuizo financeiro com seguro e sem seguro também esta aumentando
+# ou seja, a empresa esta adotando medidas de risco mais rigidas, ou mais avessas ao risco, fazendo com que o prejuizo extra, em comparação com o prejuizo obtido quando o seguro é contratado,
+# é mais penalizado, fazendo assim com que mesmo pagando um premio mais alto (β_item(h) > β_item(f) > b_item(e)) seja preferível contratar o seguro.
