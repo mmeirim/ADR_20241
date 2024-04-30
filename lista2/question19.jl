@@ -90,7 +90,7 @@ eq_certo_sseg = log(1-u_sseg)/θ
 
 # EQ certo Seguro - EQ Certo S/ seguro
 β = - (eq_certo_seg - eq_certo_sseg)
-println("O ser o maior valor de prêmio (β) considerando a função utilidade é de : \$$(round(β, digits=2))")
+println("O maior valor de prêmio (β) considerando a função utilidade é de : \$$(round(β, digits=2))")
 
 # ============================     Item (g)     ============================== #
 u_segP = sum(calc_UtilidadeSeguro(θ, - (β + calcPrejuizo(T, D[i]))) * pr[i] for i in Ω) * pr_Ac + calc_UtilidadeSeguro(θ,- (β + 0)) * (1-pr_Ac)
