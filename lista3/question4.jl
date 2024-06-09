@@ -43,7 +43,7 @@ CapExpModel = Model(GLPK.Optimizer);
 
 # ========== Restrições ========== #
 
-@constraint(CapExpModel, Rest1[i in I], x[i] <= p[i] + cap_max[i]);
+@constraint(CapExpModel, Rest1[i in I], x[i] <= cap_max[i]);
 @constraint(CapExpModel, Rest2[i in I, ω in Ω], y[i,ω] <= x[i] + p[i]);
 @constraint(CapExpModel, Rest3[ω in Ω], sum(y[i,ω] for i in I) >= d[ω]);
 
@@ -125,7 +125,7 @@ IFlow = 1:(nUnits+1)
 
 # ========== Restrições ========== #
 
-@constraint(CapExpModelFlow, Rest1[i in IFlow[1:nUnits]], x[i] <= p[i] + cap_max[i]);
+@constraint(CapExpModelFlow, Rest1[i in IFlow[1:nUnits]], x[i] <= cap_max[i]);
 @constraint(CapExpModelFlow, Rest2[i in IFlow[1:nUnits], ω in Ω], y[i,ω] <= x[i] + p[i]);
 @constraint(CapExpModelFlow, Rest3[ω in Ω], sum(y[i,ω] for i in IFlow[1:nUnits]) >= d[ω]);
 
