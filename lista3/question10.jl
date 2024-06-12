@@ -31,7 +31,7 @@ function runMarkowitzModel(J, Rmin)
     MarkowitzModel = Model(Ipopt.Optimizer);
     set_silent(MarkowitzModel)
     
-    @variable(MarkowitzModel, x[J]);
+    @variable(MarkowitzModel, x[J] >=0);
 
     @constraint(MarkowitzModel, Rest1, sum(μ[j]*x[j] for j in J) == Rmin);  # Conjunto de Aceitação
     @constraint(MarkowitzModel, Rest2, sum(x[j] for j in J) == 1);
@@ -87,6 +87,77 @@ p10b = plot!(Varian, Expect,
 );
 
 display(p10b);
-savefig(p10b, "lista3/images/q10b_efficientfrontier.png")
+# savefig(p10b, "lista3/images/q10b_efficientfrontier.png")
 
 # ======================  letra (c)  ========================== #
+# Teoricamente podemos justificar que com essa alocação, o retorno é de 11.2%, com desvio padr\~ao de 37.28% e é possível obter este mesmo retorno com uma variÂnia menor.
+fix = [0.2, 0.2, 0.6]
+varianc = sqrt(sum(fix[i]*Σ[i,j]*fix[j] for i in J, j in J))
+expec = sum(μ[j]*fix[j] for j in J)
+
+p10c = plot!(p10b, [varianc], [expec] ,seriestype="scatter", labels="Allocation - 10c")
+display(p10c);
+# savefig(p10c, "lista3/images/q10c_efficientfrontierAllocation.png")
+
+# ======================  letra (d)  ========================== #
+function runMarkowitzModelFixedAtv3(J, Rmin)
+    MarkowitzModel = Model(Ipopt.Optimizer);
+    set_silent(MarkowitzModel)
+    
+    @variable(MarkowitzModel, x[J]);
+
+    @constraint(MarkowitzModel, Rest1, sum(μ[j]*x[j] for j in J) == Rmin);  # Conjunto de Aceitação
+    @constraint(MarkowitzModel, Rest2, sum(x[j] for j in J) == 1);
+    @constraint(MarkowitzModel, Rest3, x[3] == 0.4)
+
+    @objective(MarkowitzModel, Min, sum(x[i]*Σ[i,j]*x[j] for i in J, j in J));
+
+    optimize!(MarkowitzModel);
+
+    status         = termination_status(MarkowitzModel);
+    Variance       = JuMP.objective_value(MarkowitzModel);
+    xOpt           = JuMP.value.(x);
+    return status, Variance, xOpt
+end
+
+sd, vd, xOptd = runMarkowitzModelFixedAtv3(J, Rmin)
+println("\n========= letra (d) =========")
+println("\nStatus: ", sd,);
+println("Minimum Variance: ", vd);
+println("Allocation: (", xOptd[1], ", ", xOptd[2], ", ", xOptd[3], ")");
+println("\n ============================")
+
+# ======================  letra (e)  ========================== #
+println("\n========= letra (e) =========")
+
+retE = sum(Ativo1[i] * xOptd[1] + Ativo2[i] * xOptd[2] + Ativo3[i] * xOptd[3] < Rmin for i in 1:length(Ativo1))
+probE = retE/length(Ativo1)
+
+# ======================  letra (f)  ========================== #
+# Não é viável
+
+sf, vf, xOptf = runMarkowitzModel(J, 0.2)
+println("\n========= letra (f) =========")
+println("\nStatus: ", sf,);
+println("Minimum Variance: ", vf);
+println("Allocation: (", xOptf[1], ", ", xOptf[2], ", ", xOptf[3], ")");
+println("\n ============================")
+
+# ======================  letra (g)  ========================== #
+# Alocar tudo na renda fixa pq ja alcanço o retorno desejado e com variancia/risco 0
+μ  = [Ret1 ; Ret2 ; Ret3; Rmin];
+
+Σ  = [Var1   Cov12  Cov13  0 ;
+      Cov12   Var2  Cov23  0 ;
+      Cov13  Cov23   Var3  0 ;
+        0       0     0    0
+];
+
+nAtivos = 4;
+J = 1:nAtivos;
+sg, vg, xOptg = runMarkowitzModel(J, Rmin)
+println("\n========= letra (g) =========")
+println("\nStatus: ", sg,);
+println("Minimum Variance: ", vg);
+println("Allocation: (", xOptg[1], ", ", xOptg[2], ", ", xOptg[3], ", ", xOptg[4], ")");
+println("\n ============================")
