@@ -1,11 +1,11 @@
 # ============================================================================ #
 # ======================       Newsvendor Problem       ====================== #
 # ============================================================================ #
-
+println("AQUI")
 using Distributions, Random
 using Plots
 using JuMP
-using GLPK              # Solver Gratuito de Programação Linear & Inteira Mista - https://github.com/jump-dev/GLPK.jl | https://www.gnu.org/software/glpk/
+# using GLPK              # Solver Gratuito de Programação Linear & Inteira Mista - https://github.com/jump-dev/GLPK.jl | https://www.gnu.org/software/glpk/
 
 using Gurobi            # Solver Comercial de Programação Matemática - https://github.com/jump-dev/Gurobi.jl | https://www.gurobi.com/
                         #   --> A PUC-Rio possui licença acadêmica gratuita para os alunos.
@@ -18,89 +18,170 @@ u = 150;
 q = 60;
 r = 10;
 c = 20;
-flag_tax = false;
+Rmin = -1000;                    # Risk Budget
 
-# nLines = 3;
-# SetLines = 1:nLines;
-# p_break = [0.00 ; 1500 ; 3000];
-# β2 = [1.00 ;  0.75 ; 0.50];
-# β1 = [0.00 ; (β2[1] - β2[2])*p_break[2] ; ((β2[1] - β2[2])*p_break[2] + p_break[3]*(β2[2] - β2[3]))];
-
-# if (flag_tax) plot_tax(u, q, c, β1, β2); end;
-
-# ============================================================================ #
 
 # ========================     Sampling Process     ========================== #
 
-nCenarios = 50000;                  # Number of Scenarios
-Ω = 1:nCenarios;                    # Set of Scenarios
-p = ones(nCenarios)*(1/nCenarios);  # Equal Probability
+function generateScenarios(nCenarios)
+    Ω = 1:nCenarios;                    # Set of Scenarios
+    p = ones(nCenarios)*(1/nCenarios);  # Equal Probability
 
-dmin = 50;
-dmax = 150;
+    dmin = 50;
+    dmax = 150;
 
-# ===================================
-#      =====> Using Julia <=====     
-# ===================================
-
-# -> https://juliastats.org/Distributions.jl/stable/ <- #
-
-Random.seed!(1);
-d  = rand(Uniform(dmin, dmax), nCenarios);
-
-# ===================================
-#         =====> Using R <=====     
-# ===================================
-
-# -> https://juliainterop.github.io/RCall.jl/stable/ <- #
-
-#R"set.seed(1)"
-#d  = rcopy(R"runif($nCenarios, min = $dmin, max = $dmax)");
-
-# ============================================================================ #
+    Random.seed!(1);
+    d  = rand(Uniform(dmin, dmax), nCenarios);
+    return d, Ω, p
+end
 
 # ========================     Sample Problem     ============================ #
 
-NewsVendorProb = Model(GLPK.Optimizer);
-# NewsVendorProb = Model(Gurobi.Optimizer);
+function solveNewsvendorProblem(nCenarios, useCVaR, useLambda) 
+    d, Ω, p = generateScenarios(nCenarios)
 
-# ========== Variáveis de Decisão ========== #
+    # NewsVendorProb = Model(GLPK.Optimizer);
+    NewsVendorProb = Model(Gurobi.Optimizer);
+    set_silent(NewsVendorProb);
 
-@variable(NewsVendorProb, x >= 0);
-@variable(NewsVendorProb, y[Ω] >= 0);
-@variable(NewsVendorProb, z[Ω] >= 0);
-@variable(NewsVendorProb, R[Ω]);
-@variable(NewsVendorProb, R_a[Ω]);
+    @variable(NewsVendorProb,0 <= x <= u, Int);
+    @variable(NewsVendorProb, y[Ω] >= 0);
+    @variable(NewsVendorProb, z[Ω] >= 0);
+    @variable(NewsVendorProb, R_a[Ω]);
 
-# ========== Restrições ========== #
+    @constraint(NewsVendorProb, Rest1[ω in Ω], R_a[ω] == q*y[ω] + r*z[ω] - c*x);
+    @constraint(NewsVendorProb, Rest2[ω in Ω], y[ω] <= d[ω]);
+    @constraint(NewsVendorProb, Rest3[ω in Ω], y[ω] + z[ω] <= x);
+    @constraint(NewsVendorProb, Rest4[ω in Ω], z[ω] <= 0.1*x);
 
-@constraint(NewsVendorProb, Rest1, x <= u);
-@constraint(NewsVendorProb, Rest2[ω in Ω], y[ω] <= d[ω]);
-@constraint(NewsVendorProb, Rest3[ω in Ω], y[ω] + z[ω] <= x);
-@constraint(NewsVendorProb, Rest4[ω in Ω], R_a[ω] == q*y[ω] + r*z[ω] - c*x);
-# @constraint(NewsVendorProb, Rest5[ω in Ω, i in SetLines], R[ω] <= β1[i] + β2[i]*R_a[ω]);
-@constraint(NewsVendorProb, Rest6[ω in Ω], z[ω] <= 0.1*x);
+    if (useCVaR)
+        @variable(NewsVendorProb, z_CVaR);
+        @variable(NewsVendorProb, β[Ω] >= 0);
+        
+        @constraint(NewsVendorProb, Rest5, z_CVaR - sum(p[ω]*β[ω] for ω in Ω)/(1-α) >= -Rmin);
+        @constraint(NewsVendorProb, Rest6[ω in Ω], β[ω] >= z_CVaR - R_a[ω]);
+    end;
 
+    if (useLambda)
+        @variable(NewsVendorProb, z_CVaR);
+        @variable(NewsVendorProb, β[Ω] >= 0);
+        @constraint(NewsVendorProb, Rest6[ω in Ω], β[ω] >= z_CVaR - R_a[ω]);
 
-# ========== Função Objetivo ========== #
+        @objective(NewsVendorProb, Max, (1-λ)*sum(R_a[ω]*p[ω] for ω in Ω) + λ*(z_CVaR - sum(p[ω]*β[ω] for ω in Ω)/(1-α)));
+    else
+        @objective(NewsVendorProb, Max, sum(R_a[ω]*p[ω] for ω in Ω));
+    end
 
-if (flag_tax)
-    @objective(NewsVendorProb, Max, sum(R[ω]*p[ω] for ω in Ω));
-else
-    @objective(NewsVendorProb, Max, sum(R_a[ω]*p[ω] for ω in Ω));
+    optimize!(NewsVendorProb);
+
+    status      = termination_status(NewsVendorProb);
+
+    Profit      = JuMP.objective_value(NewsVendorProb);
+    xOpt        = JuMP.value.(x);
+    yOpt        = JuMP.value.(y);
+    zOpt        = JuMP.value.(z);
+    ROpt        = JuMP.value.(R_a);
+    z_CVaROpt   = JuMP.value.(z_CVaR);
+    βOpt        = JuMP.value.(β);
+    return status, Profit, xOpt, yOpt, zOpt, ROpt, z_CVaROpt, βOpt
 end
 
-optimize!(NewsVendorProb);
-
-status      = termination_status(NewsVendorProb);
-
-Profit      = JuMP.objective_value(NewsVendorProb);
-xOpt        = JuMP.value.(x);
-yOpt        = JuMP.value.(y);
-zOpt        = JuMP.value.(z);
-
-println("==============================\n")
+# ========================  letra c  ============================ #
+# O Resultado é um pouco diferente do real devido ao pequeno número de cenários que faz com que a realidade não seja bem representada
+nCenarios = 20
+useCVaR = false
+useLambda = false
+status, Profit, xOpt = solveNewsvendorProblem(nCenarios, useCVaR, useLambda)
+println("============ letra (c) ==================\n")
 println("Status: ", status);
 println("Lucro Jornaleiro: ", Profit);
 println("Quant. Jornais: ", xOpt);
 println("\n==============================")
+
+# ========================  letra e  ============================ #
+# É possível ver que com mais cenários o resultado começa a convergir para valores próximos ao do problema real. Para igualar o valor é necessário mais cenários com o gurobi
+# nCenarios = 100000
+# useCVaR = false
+# useLambda = false
+# tCenarios = collect(1:1000:nCenarios)
+# prof = []
+# for n in tCenarios
+#     print("(n=$n)")
+#     status, Profit = solveNewsvendorProblem(n, useCVaR, useLambda)
+#     append!(prof, Profit)
+# end
+
+# pe = plot(tCenarios, prof, xlabel="Número de Cenários", ylabel="Receita Esperada", label="", title="Gráfico de  Nº de Cenários X Receita Esperada", legend=false)
+# display(pe)
+# savefig(pe, "lista3/images/q1e_profCenarios.png")
+
+# ========================  letra f  ============================ #
+nCenarios = 100000
+α = 0.95;
+d, Ω, p = generateScenarios(nCenarios)
+xStar = 120
+ROrd = sort([q*min(xStar,d[ω]) + r*min(max(xStar-d[ω], 0), 0.1*xStar) - c*xStar for ω in Ω])
+nStar = Int(floor((1 - α)*nCenarios));
+println("============ letra (f) ==================\n")
+println(" Conditional Value at Risk: ", -mean(ROrd[1:nStar]));
+println("\n==============================")
+
+# ========================  letra g  ============================ #
+
+nCenarios = 100000
+useCVaR = true
+useLambda = false
+α= 0.95; 
+Rmin = -2000;                    # Risk Budget
+status, Profit, xOpt, yOpt, zOpt, ROpt = solveNewsvendorProblem(nCenarios,useCVaR,useLambda)
+ROrd = sort(Array(ROpt[:]));
+nStar = Int(floor((1 - α)*nCenarios));
+println("============ letra (g) ==================\n")
+println("Status: ", status);
+println("Lucro Jornaleiro: ", Profit);
+println("Quant. Jornais: ", xOpt);
+println(" Conditional Value at Risk: ", -mean(ROrd[1:nStar]));
+println("\n==============================")
+
+# ========================  letra h  ============================ #
+nCenarios = 100000
+useCVaR = false
+useLambda = true
+α = 0.95; 
+λ = 0.5
+status, Profit, xOpt, yOpt, zOpt, ROpt = solveNewsvendorProblem(nCenarios,useCVaR, useLambda)
+ROrd = sort(Array(ROpt[:]));
+nStar = Int(floor((1 - α)*nCenarios));
+CVaR = -mean(ROrd[1:nStar])
+
+println("============ letra (h) ==================\n")
+println("Status: ", status);
+println("Lucro Jornaleiro: ", Profit);
+println("Quant. Jornais: ", xOpt);
+println("\n==============================")
+
+# ========================  letra i  ============================ #
+
+# nCenarios = 100000
+# useCVaR = false
+# useLambda = true
+# tLambdas = collect(0:0.01:1)
+# xStars = []
+# expValues = []
+# CVaRValues = []
+# for n in tLambdas
+#     λ = n
+#     print("(λ=$λ)")
+#     status, Profit, xOpt, yOpt, zOpt, rOpt, z_CVaROpt, βOpt = solveNewsvendorProblem(nCenarios, useCVaR, useLambda)
+#     append!(expValues, sum(rOpt[ω]*p[ω] for ω in Ω))
+#     append!(CVaRValues, z_CVaROpt - sum(p[ω]*βOpt[ω] for ω in Ω)/(1-α))
+#     append!(xStars, xOpt)
+#     println(xOpt, sum(rOpt[ω]*p[ω] for ω in Ω),  z_CVaROpt - sum(p[ω]*βOpt[ω] for ω in Ω)/(1-α))
+# end
+
+# p_i = plot(xStars, tLambdas, xlabel="x*", ylabel="λ", label="", title="Gráfico de x* X λ", legend=false)
+# display(p_i)
+# p_i2 = plot(CVaRValues, expValues, xlabel="CVaR", ylabel="Valor esperado", label="", title="Gráfico de CVaR X Valor Experado", legend=false)
+# display(p_i2)
+# savefig(p_i, "lista3/images/q1i_xstarlambdas.png")
+# savefig(p_i2, "lista3/images/q1i_CVaRExpect.png")
