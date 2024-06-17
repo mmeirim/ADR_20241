@@ -99,6 +99,13 @@ p10c = plot!(p10b, [varianc], [expec] ,seriestype="scatter", labels="Allocation 
 display(p10c);
 # savefig(p10c, "lista3/images/q10c_efficientfrontierAllocation.png")
 
+status, Variance, xOpt = runMarkowitzModel(J, expec)
+println("\n========= letra (c) =========")
+println("\nStatus: ", status,);
+println("Minimum Variance: ", Variance);
+println("Allocation: (", xOpt[1], ", ", xOpt[2], ", ", xOpt[3], ")");
+println("\n ============================")
+
 # ======================  letra (d)  ========================== #
 function runMarkowitzModelFixedAtv3(J, Rmin)
     MarkowitzModel = Model(Ipopt.Optimizer);
@@ -132,6 +139,7 @@ println("\n========= letra (e) =========")
 
 retE = sum(Ativo1[i] * xOptd[1] + Ativo2[i] * xOptd[2] + Ativo3[i] * xOptd[3] < Rmin for i in 1:length(Ativo1))
 probE = retE/length(Ativo1)
+println(probE)
 
 # ======================  letra (f)  ========================== #
 # Não é viável

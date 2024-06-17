@@ -52,27 +52,29 @@ p2 = plot!(Varian, Expect,
 );
 
 mvar, mexp = findmin(Varian)
-p3 = plot!(p2, [mvar], [Expect[mexp]],seriestype="scatter", labels="Allocation - Min DP - 9b")
-display(p3);
+display(p2);
 # savefig(p2, "lista3/images/q9b_efficientfrontier.png")
 
 # ======================  letra (c) ========================== #
 
 Rmin = Expect[mexp]
 MarkowitzModel = Model(Ipopt.Optimizer);
-
+set_silent(MarkowitzModel)
 # ========== Variáveis de Decisão ========== #
 
 @variable(MarkowitzModel, x[J]);
 
 # ========== Restrições ========== #
 
-@constraint(MarkowitzModel, Rest1, sum(μ[j]*x[j] for j in J) == Rmin);  # Conjunto de Aceitação
+# @constraint(MarkowitzModel, Rest1, sum(μ[j]*x[j] for j in J) == Rmin);  # Conjunto de Aceitação
 @constraint(MarkowitzModel, Rest2, sum(x[j] for j in J) == 1);
+@constraint(MarkowitzModel, Rest4[j in J], x[j] >= 0);
+# @constraint(MarkowitzModel, Rest5[j in J], x[j] <= 2);
+
 
 # ========== Função Objetivo ========== #
 
-@objective(MarkowitzModel, Min, sum(x[i]^2*Σ[i,i]^2 for i in J) + sum(x[i]*x[j]*Σ[i,j]*Σ[i,i]*Σ[j,j] for i in J, j in J[i:end]));
+@objective(MarkowitzModel, Min, sum(x[i]^2*Σ[i,i]^2 for i in J) + sum(x[i]*x[j]*Σ[i,j]*Σ[i,i]*Σ[j,j] for i in J, j in filter(x->x!=i, J)));
 
 optimize!(MarkowitzModel);
 
@@ -85,10 +87,15 @@ println("\n=================================")
 
 println("\nStatus: ", status, "\n");
 
-println("\nMinimum Variance: ", Variance);
+println("\nMinimum Variance: ", sqrt(Variance));
 println("Allocation: (", xOpt[1], ", ", xOpt[2], ")");
+println("\nExpect: ", sum(μ[j]*xOpt[j] for j in J));
 
 println("\n=================================")
+
+p3 = plot!(p2, [sqrt(Variance)], [sum(μ[j]*xOpt[j] for j in J)],seriestype="scatter", labels="Allocation - Min DP - 9b")
+display(p3);
+# savefig(p3, "lista3/images/q9c_minvar.png")
 
 # ======================  letra (d) ========================== #
 # tg = (μ[1] -μ[2]) / (Σ[1,1]- Σ[1,2]*Σ[2,2])
@@ -118,7 +125,7 @@ p4 = plot!(p3,sqrt.(Varian_lr), Expect_lr,
 );
 
 display(p4)
-savefig(p4, "lista3/images/q9f_efficientfrontier.png")
+# savefig(p4, "lista3/images/q9f_efficientfrontier.png")
 
 # ======================  letra (g) ========================== #
 
@@ -129,6 +136,7 @@ savefig(p4, "lista3/images/q9f_efficientfrontier.png")
 ];
 
 MarkowitzModel_g = Model(Ipopt.Optimizer);
+set_silent(MarkowitzModel_g)
 
 # ========== Variáveis de Decisão ========== #
 
@@ -162,7 +170,7 @@ println("\n=================================")
 p5 = plot!(p4, [sqrt(Variance)], [Expect[mexp]],seriestype="scatter", labels="Allocation - Min DP - 9g")
 display(p5);
 
-savefig(p5, "lista3/images/q9g_efficientfrontiermindp.png")
+# savefig(p5, "lista3/images/q9g_efficientfrontiermindp.png")
 
 # ======================  letra (h) ========================== #
 # a partir da formula da variancia => x = +- sqrt(V(Lc))/σm
