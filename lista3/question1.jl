@@ -81,10 +81,18 @@ function solveNewsvendorProblem(nCenarios, useCVaR, useLambda)
     yOpt        = JuMP.value.(y);
     zOpt        = JuMP.value.(z);
     ROpt        = JuMP.value.(R_a);
-    z_CVaROpt   = JuMP.value.(z_CVaR);
-    βOpt        = JuMP.value.(β);
-    return status, Profit, xOpt, yOpt, zOpt, ROpt, z_CVaROpt, βOpt
+    if (useLambda)
+        z_CVaROpt   = JuMP.value.(z_CVaR);
+        βOpt        = JuMP.value.(β);
+        return status, Profit, xOpt, yOpt, zOpt, ROpt, z_CVaROpt, βOpt
+    end
+    return status, Profit, xOpt, yOpt, zOpt, ROpt
 end
+
+# ========================  letra b  ============================ #
+
+ll = [sum((1/100)*(q*min(x,d) + r*min(max(x-d, 0), 0.1*x) - c*x) for d in 50:150) for x in 1:150]
+e, xx = findmax(ll)
 
 # ========================  letra c  ============================ #
 # O Resultado é um pouco diferente do real devido ao pequeno número de cenários que faz com que a realidade não seja bem representada
@@ -105,15 +113,21 @@ println("\n==============================")
 # useLambda = false
 # tCenarios = collect(1:1000:nCenarios)
 # prof = []
+# xs = []
 # for n in tCenarios
 #     print("(n=$n)")
-#     status, Profit = solveNewsvendorProblem(n, useCVaR, useLambda)
+#     status, Profit, xOpt = solveNewsvendorProblem(n, useCVaR, useLambda)
+#     append!(xs, xOpt)
 #     append!(prof, Profit)
 # end
 
 # pe = plot(tCenarios, prof, xlabel="Número de Cenários", ylabel="Receita Esperada", label="", title="Gráfico de  Nº de Cenários X Receita Esperada", legend=false)
 # display(pe)
+# pe2 = plot(tCenarios, xs, xlabel="Número de Cenários", ylabel="Solução ótima", label="", title="Gráfico de  Nº de Cenários X Solução ótima", legend=false)
+# display(pe2)
 # savefig(pe, "lista3/images/q1e_profCenarios.png")
+savefig(pe2, "lista3/images/q1e_solCenarios.png")
+
 
 # ========================  letra f  ============================ #
 nCenarios = 100000
